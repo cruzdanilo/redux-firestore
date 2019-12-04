@@ -629,6 +629,22 @@ describe('query utils', () => {
           expect(theSpy).to.be.calledWith(meta.subcollections[0].endBefore);
         });
       });
+
+      describe('select', () => {
+        it('calls select if valid', () => {
+          meta = {
+            collection: 'test',
+            doc: 'other',
+            subcollections: [
+              { collection: 'thing', doc: 'again', select: 'field' },
+            ],
+          };
+          const { theFirebase, theSpy } = fakeFirebaseWith('select');
+          result = firestoreRef(theFirebase, meta);
+          expect(result).to.be.an('object');
+          expect(theSpy).to.be.calledWith(meta.subcollections[0].select);
+        });
+      });
     });
 
     describe('where', () => {
@@ -769,6 +785,34 @@ describe('query utils', () => {
         result = firestoreRef(fakeFirebase, meta);
         expect(result).to.be.an('object');
         expect(endBeforeSpy).to.be.calledWith(meta.endBefore);
+      });
+    });
+
+    describe('select', () => {
+      it('calls select if valid', () => {
+        meta = { collection: 'test', select: 'field' };
+        const selectSpy = sinon.spy(() => ({}));
+        fakeFirebase = {
+          firestore: () => ({
+            collection: () => ({ select: selectSpy }),
+          }),
+        };
+        result = firestoreRef(fakeFirebase, meta);
+        expect(result).to.be.an('object');
+        expect(selectSpy).to.be.calledWith(meta.select);
+      });
+
+      it('handles array of fields', () => {
+        meta = { collection: 'test', select: ['field0', 'field1'] };
+        const selectSpy = sinon.spy(() => ({}));
+        fakeFirebase = {
+          firestore: () => ({
+            collection: () => ({ select: selectSpy }),
+          }),
+        };
+        result = firestoreRef(fakeFirebase, meta);
+        expect(result).to.be.an('object');
+        expect(selectSpy).to.be.calledWith(...meta.select);
       });
     });
   });

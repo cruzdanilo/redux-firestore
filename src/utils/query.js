@@ -75,6 +75,26 @@ function addOrderByToRef(ref, orderBy) {
 }
 
 /**
+ * Add attribute to Cloud Firestore Reference handling invalid formats
+ * and multiple select fields (array).
+ * @param {firebase.firestore.Reference} ref - Reference which to add where to
+ * @param {string|Array} select - Statement to attach to reference
+ * @returns {firebase.firestore.Reference} Reference with where statement attached
+ */
+function addSelectToRef(ref, select) {
+  if (
+    !Array.isArray(select) &&
+    !(typeof select === 'string' || select instanceof String)
+  ) {
+    throw new Error('select parameter must be an array or string.');
+  }
+  if (typeof select === 'string' || select instanceof String) {
+    return ref.select(select);
+  }
+  return ref.select(...select);
+}
+
+/**
  * Call methods on ref object for provided subcollection list (from queryConfig
  * object)
  * @param {firebase.firestore.CollectionReference} ref - reference on which
@@ -108,6 +128,7 @@ function handleSubcollections(ref, subcollectionList) {
       }
       if (subcollection.endAt) ref = ref.endAt(subcollection.endAt);
       if (subcollection.endBefore) ref = ref.endBefore(subcollection.endBefore);
+      if (subcollection.select) ref = addSelectToRef(ref, subcollection.select);
 
       ref = handleSubcollections(ref, subcollection.subcollections);
       /* eslint-enable */
@@ -142,6 +163,7 @@ export function firestoreRef(firebase, meta) {
     startAfter,
     endAt,
     endBefore,
+    select,
   } = meta;
   let ref = firebase.firestore();
   // TODO: Compare other ways of building ref
@@ -163,6 +185,7 @@ export function firestoreRef(firebase, meta) {
   if (startAfter) ref = ref.startAfter(startAfter);
   if (endAt) ref = ref.endAt(endAt);
   if (endBefore) ref = ref.endBefore(endBefore);
+  if (select) ref = addSelectToRef(ref, select);
   return ref;
 }
 
@@ -200,6 +223,7 @@ function pickQueryParams(obj) {
     'startAt',
     'endAt',
     'endBefore',
+    'select',
   ].reduce((acc, key) => (obj[key] ? { ...acc, [key]: obj[key] } : acc), {});
 }
 
